@@ -1,12 +1,12 @@
 import java.sql.*;
 
-public class OracleUtils {
+public class MySQLUtils {
 
-	private static String url = "jdbc:oracle:thin:@10.9.0.147:1521";
+	private static String url = "jdbc:mysql://172.16.0.105:3306";
 	
 	static {
 		try {
-			Class.forName("oracle.jdbc.driver.OracleDriver");
+			Class.forName("com.mysql.jdbc.Driver");
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		}
@@ -14,16 +14,7 @@ public class OracleUtils {
 	
 	public static Connection getConnnection(String user,String password){
 		try {
-			return DriverManager.getConnection(OracleUtils.url, user, password);
-		} catch (SQLException e) {
-			e.printStackTrace();
-			return null;
-		}
-	}
-
-	public static Connection getConnnection(String url, String user,String password){
-		try {
-			return DriverManager.getConnection(url, user, password);
+			return DriverManager.getConnection(MySQLUtils.url, user, password);
 		} catch (SQLException e) {
 			e.printStackTrace();
 			return null;

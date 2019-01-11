@@ -1,12 +1,12 @@
 import java.sql.*;
 
-public class SqlUtils {
+public class SQLServerUtils {
 
-	private static String url = "jdbc:mysql://172.16.0.105:3306";
+	private static String url = "jdbc:sqlserver://172.16.0.105:3306";
 	
 	static {
 		try {
-			Class.forName("com.mysql.jdbc.Driver");
+			Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		}
@@ -14,7 +14,16 @@ public class SqlUtils {
 	
 	public static Connection getConnnection(String user,String password){
 		try {
-			return DriverManager.getConnection(SqlUtils.url, user, password);
+			return DriverManager.getConnection(SQLServerUtils.url, user, password);
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	public static Connection getConnnection(String url, String user,String password){
+		try {
+			return DriverManager.getConnection(url, user, password);
 		} catch (SQLException e) {
 			e.printStackTrace();
 			return null;

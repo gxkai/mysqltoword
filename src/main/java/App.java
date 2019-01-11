@@ -21,6 +21,10 @@ import java.util.Map;
  */
 public class App 
 {
+	private static final String type = "oracle";
+	private static final String database = "";
+	private static final String user = "";
+	private static final String password = "";
     public static void main( String[] args ) throws IOException
     {
     	
@@ -29,7 +33,7 @@ public class App
     	if(args.length<4){
     		System.exit(0);
     	}
-    	
+
     	Map<String, String> map = Check(args);
     	
     	if(map.get("-t")==null||map.get("-t").equals("mysql")){
@@ -40,6 +44,61 @@ public class App
     		System.exit(0);
     	}
     }
+
+	private static void SQLServer(Map<String,String> map) throws IOException{
+		//默认生成的文件名
+		String outFile = map.get("-d")+"/数据库表结构(ORACLE).docx";
+
+		//查询表的名称以及一些表需要的信息
+		String sqlserverSql1 = "select ut.table_name as table_name,ut.tablespace_name as engine,ut.buffer_pool as table_collation, uc.table_type as table_type,uc.comments as table_comment,ut.last_analyzed as create_options from user_tables ut,user_tab_comments uc where ut.table_name=uc.table_name";
+
+		String sqlserverSql2 = "select rownum as ordinal_position,c.nullable as is_nullable,c.data_default as column_default,c.data_type as data_type,c.data_length as character_maximum_length,t.column_name as column_name,t.comments as column_comment from user_col_comments t,user_tab_columns c where c.column_name=t.column_name and c.table_name=t.table_name and t.table_name='";
+
+		ResultSet rs = OracleUtils.getResultSet(SQLServerUtils.getConnnection(map.get("-u"), map.get("-p")),sqlserverSql1);
+
+		List<Map<String, String>> list = getTableName(rs);
+		RowRenderData header = getHeader();
+		Map<String,Object> datas = new HashMap<String, Object>();
+		datas.put("title", "数据结构表(ORACLE)");
+		List<Map<String,Object>> tableList = new ArrayList<Map<String,Object>>();
+		int i = 0;
+		for(Map<String, String> str : list){
+			i++;
+			String sql = sqlserverSql2+str.get("table_name")+"'";
+			ResultSet set = OracleUtils.getResultSet(SQLServerUtils.getConnnection(map.get("-u"), map.get("-p")),sql);
+			List<RowRenderData> rowList = getRowRenderData(set);
+			Map<String,Object> data = new HashMap<String,Object>();
+			data.put("no", ""+i);
+			data.put("table_comment",str.get("table_comment")+"");
+			data.put("engine",str.get("engine")+"");
+			data.put("table_collation",str.get("table_collation")+"");
+			data.put("table_type",str.get("table_type")+"");
+			data.put("name", new TextRenderData(str.get("table_name"), POITLStyle.getHeaderStyle()));
+			data.put("table", new MiniTableRenderData(header, rowList));
+			tableList.add(data);
+		}
+
+		datas.put("tablelist", new DocxRenderData(FileUtils.Base64ToFile(outFile,false), tableList));
+		XWPFTemplate template = XWPFTemplate.compile(FileUtils.Base64ToInputStream()).render(datas);
+
+		FileOutputStream out = null;
+		try {
+			out = new FileOutputStream(outFile);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}finally {
+			try {
+				template.write(out);
+				out.flush();
+				out.close();
+				template.close();
+
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
     
     private static void Oracle(Map<String,String> map) throws IOException{
     	//默认生成的文件名
@@ -107,7 +166,7 @@ public class App
     			+ "FROM information_schema.columns WHERE table_schema='"+map.get("-n")+"' and table_name='";
 		
     	
-		ResultSet rs = SqlUtils.getResultSet(SqlUtils.getConnnection(map.get("-u"), map.get("-p")),mysqlSql1);
+		ResultSet rs = MySQLUtils.getResultSet(MySQLUtils.getConnnection(map.get("-u"), map.get("-p")),mysqlSql1);
 		
 		List<Map<String, String>> list = getTableName(rs);
 		RowRenderData header = getHeader();
@@ -118,7 +177,7 @@ public class App
 		for(Map<String, String> str : list){
 			i++;
 			String sql = mysqlSql2+str.get("table_name")+"'";
-			ResultSet set = SqlUtils.getResultSet(SqlUtils.getConnnection(map.get("-u"), map.get("-p")),sql);
+			ResultSet set = MySQLUtils.getResultSet(MySQLUtils.getConnnection(map.get("-u"), map.get("-p")),sql);
 			List<RowRenderData> rowList = getRowRenderData(set);
 			Map<String,Object> data = new HashMap<String,Object>();
 			data.put("no", ""+i);
@@ -215,8 +274,8 @@ public class App
 						new TextRenderData(set.getString("column_comment")+""),
 						new TextRenderData(set.getString("data_type")+""),
 						new TextRenderData(set.getString("character_maximum_length")+""),
-						new TextRenderData(set.getString("is_nullable")+""),
-						new TextRenderData(set.getString("column_default")+"")
+						new TextRenderData(set.getString("is_nullable")+"")
+//						new TextRenderData(set.getString("column_default")+"")
 						);
 				if(i%2==0){
 					row.setStyle(POITLStyle.getBodyTableStyle());
